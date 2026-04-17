@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini 2.5 TTS Studio - Myanmar Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Myanmar', sans-serif; }
+        .glass {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-button {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+            transform: translateY(-2px);
+        }
+        .waveform-bar {
+            width: 3px;
+            background: #06b6d4;
+            border-radius: 2px;
+            animation: waveform 1s ease-in-out infinite;
+        }
+        @keyframes waveform {
+            0%, 100% { height: 8px; }
+            50% { height: 24px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-cyan-500/30">
+
+    <div class="max-w-xl w-full glass p-8 rounded-[2rem] shadow-2xl space-y-8 border border-white/5">
+        <!-- Header -->
+        <div class="text-center space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold tracking-widest uppercase">
+                Premium Neural Engine
+            </div>
+            <h1 class="text-4xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">
+                Gemini Audio Studio
+            </h1>
+            <p class="text-slate-400 text-sm font-medium">မြန်မာစကားသံကို ပီပီသသနှင့် သဘာဝကျကျ ဖန်တီးပေးသည်။</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="space-y-5">
+            <div class="flex justify-between items-end px-1">
+                <div>
+                    <label for="textInput" class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">စာသားရိုက်ထည့်ရန်</label>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                    <select id="voiceSelect" class="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-700 rounded-lg px-2 py-1 outline-none focus:border-cyan-500">
+                        <option value="Iapetus">Iapetus (အသံကြည်လင်မှု)</option>
+                        <option value="Kore" selected>Kore (သဘာဝကျမှု)</option>
+                        <option value="Aoede">Aoede (နူးညံ့မှု)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <textarea id="textInput" rows="5" 
+                class="w-full p-6 bg-slate-900/60 rounded-3xl border border-slate-700/50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all duration-300 resize-none placeholder-slate-600 text-lg leading-relaxed shadow-inner"
+                placeholder="ဒီမှာ စာသားရိုက်ပါ... (ဥပမာ- မင်္ဂလာပါ။ နေကောင်းပါသလား?)"></textarea>
+
+            <button onclick="handleGenerate()" id="genBtn"
+                class="w-full py-4.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] flex justify-center items-center gap-3 glow-button">
+                <span id="btnIcon">🔊</span>
+                <span id="btnText">အသံထုတ်လုပ်မည်</span>
+            </button>
+
+            <!-- Loading State -->
+            <div id="statusBox" class="hidden">
+                <div class="flex flex-col items-center justify-center p-8 bg-slate-900/40 border border-slate-800 rounded-3xl space-y-4">
+                    <div class="flex items-center gap-1.5 h-8">
+                        <div class="waveform-bar" style="animation-delay: 0.1s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.2s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.3s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.4s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.5s"></div>
+                    </div>
+                    <p class="text-cyan-400 text-sm font-medium italic">အသံကို ပီပီသသဖြစ်အောင် ပြုလုပ်နေပါသည်...</p>
+                </div>
+            </div>
+
+            <!-- Audio Player Output -->
+            <div id="audioContainer" class="hidden animate-in fade-in zoom-in-95 duration-500">
+                <div class="p-6 bg-gradient-to-br from-slate-900 to-slate-950 border border-cyan-500/30 rounded-3xl space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-500">Synthesized Audio</span>
+                        </div>
+                        <button onclick="downloadAudio()" class="text-[10px] font-bold text-slate-500 hover:text-cyan-400 transition-colors uppercase tracking-wider flex items-center gap-1">
+                            <span>📥</span> သိမ်းဆည်းရန်
+                        </button>
+                    </div>
+                    <audio id="audioPlayer" controls class="w-full h-12 accent-cyan-500"></audio>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Display -->
+        <div id="errorMessage" class="hidden p-4 bg-red-950/20 border border-red-500/20 rounded-2xl text-red-400 text-[13px] text-center leading-relaxed"></div>
+    </div>
+
+    <script>
+        const apiKey = ""; // Runtime provides the key
+        let currentAudioBlob = null;
+
+        /**
+         * Converts PCM (L16) data to a WAV file Blob.
+         */
+        function pcmToWav(pcmBase64, sampleRate) {
+            const binaryString = atob(pcmBase64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            const wavHeader = new ArrayBuffer(44);
+            const view = new DataView(wavHeader);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + bytes.length, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, bytes.length, true);
+
+            const combined = new Uint8Array(wavHeader.byteLength + bytes.length);
+            combined.set(new Uint8Array(wavHeader), 0);
+            combined.set(bytes, wavHeader.byteLength);
+
+            return new Blob([combined], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        async function handleGenerate() {
+            const text = document.getElementById('textInput').value.trim();
+            const btn = document.getElementById('genBtn');
+            const voice = document.getElementById('voiceSelect').value;
+            const statusBox = document.getElementById('statusBox');
+            const audioContainer = document.getElementById('audioContainer');
+            const errorBox = document.getElementById('errorMessage');
+
+            if (!text) {
+                showError("စာသား အရင်ရိုက်ထည့်ပေးပါ။");
+                return;
+            }
+
+            // Enhanced Prompt for Clarity
+            // We guide the model with a clear instruction prefix
+            const systemPrompt = `Please read the following Burmese text clearly and naturally in a helpful tone: ${text}`;
+
+            errorBox.classList.add('hidden');
+            audioContainer.classList.add('hidden');
+            statusBox.classList.remove('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ 
+                            parts: [{ text: systemPrompt }] 
+                        }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: voice
+                                    }
+                                }
+                            }
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.error) throw new Error(result.error.message);
+
+                const audioData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+                
+                if (!audioData || !audioData.data) {
+                    throw new Error("အသံဒေတာ မရရှိပါ။ စာသားကို ပြန်စစ်ကြည့်ပါ။");
+                }
+
+                const sampleRateMatch = audioData.mimeType.match(/rate=(\d+)/);
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1]) : 24000;
+
+                currentAudioBlob = pcmToWav(audioData.data, sampleRate);
+                const audioUrl = URL.createObjectURL(currentAudioBlob);
+                
+                const player = document.getElementById('audioPlayer');
+                player.src = audioUrl;
+                
+                statusBox.classList.add('hidden');
+                audioContainer.classList.remove('hidden');
+                player.play();
+
+            } catch (err) {
+                console.error(err);
+                showError("အမှားတစ်ခု ဖြစ်သွားပါသည်: " + err.message);
+                statusBox.classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+
+        async function fetchWithRetry(url, options, retries = 5) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status !== 429 && response.status < 500) return response;
+                } catch (e) {}
+                await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+            }
+            return fetch(url, options);
+        }
+
+        function showError(msg) {
+            const errorBox = document.getElementById('errorMessage');
+            errorBox.textContent = msg;
+            errorBox.classList.remove('hidden');
+        }
+
+        function downloadAudio() {
+            if (!currentAudioBlob) return;
+            const url = URL.createObjectURL(currentAudioBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `myanmar-speech-${Date.now()}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
